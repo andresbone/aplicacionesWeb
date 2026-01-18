@@ -10,12 +10,13 @@ app.use(express.json())
 
 //importar rutas
 const authRoutes = require('./routes/auth');
-const equiposRoutes = require('./routes/equipos');git add .
+const equiposRoutes = require('./routes/equipos')
+const usuarioRoutes = require('./routes/usuario')
 
 //usar rutas 
 app.use('/api/auth',authRoutes);
 app.use('/api/equipos',equiposRoutes);
-
+app.use('/api/usuario',usuarioRoutes);
 //ruta de ejempl
 app.get('/',(req,res)=>{
     res.send('hola desde el servidor')
