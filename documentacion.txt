@@ -1,0 +1,27 @@
+AUTENTICACION
+url: http://localhost:5000/api/auth
+
+Datos JSON:
+{
+    "username": "valor",
+    "password": "valor"
+}
+
+REQUIERE ENVIAR EL TOKEN EN EL HEADERS DE LAS PETICIONES
+Clave: Authorization
+Valor: Bearer token 
+
+METODO GET (MULTLIPLES REGISTROS)
+url: http://localhost:5000/api/equipo?page=1&cadena= valor
+
+METODO GET (REGISTRO ÚNICO)
+url: http://localhost:5000/api/equipo/ID
+
+Datos JSON:
+{
+   "usu_nombre: " ",
+   "usu_password": " " 
+}
+
+Metodo PUT 
+url: http://localhost:5000/api/equipo/30
