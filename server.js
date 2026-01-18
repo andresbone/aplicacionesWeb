@@ -10,11 +10,11 @@ app.use(express.json())
 
 //importar rutas
 const authRoutes = require('./routes/auth');
-
+const equiposRoutes = require('./routes/equipos');git add .
 
 //usar rutas 
 app.use('/api/auth',authRoutes);
-
+app.use('/api/equipos',equiposRoutes);
 
 //ruta de ejempl
 app.get('/',(req,res)=>{
