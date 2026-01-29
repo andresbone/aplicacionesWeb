@@ -10,12 +10,16 @@ app.use(express.json())
 
 //importar rutas
 const authRoutes = require('./routes/auth');
-const equiposRoutes = require('./routes/equipos');
+const equiposRoutes = require('./routes/equipos')
+const usuarioRoutes = require('./routes/usuario')
+const torneosRoutes = require('./routes/torneo.js');
+
 
 //usar rutas 
 app.use('/api/auth',authRoutes);
 app.use('/api/equipos',equiposRoutes);
-
+app.use('/api/usuario',usuarioRoutes);
+app.use('/api/torneo', torneosRoutes);
 //ruta de ejempl
 app.get('/',(req,res)=>{
     res.send('hola desde el servidor')
