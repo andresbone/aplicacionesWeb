@@ -44,10 +44,10 @@ router.get('/', verifyToken, (req, res) => {
         const totalEquipos = countResult[0].total;
         const totalPages = Math.ceil(totalEquipos / limit);
 
-        const equiposQuery = `SELECT * FROM equipo ${whereClause} LIMIT ? OFFSET ?`; 
+        const equiposQuery = `SELECT * FROM equipo ${whereClause} LIMIT ? OFFSET ?`;
         queryParams.push(limit, offset);
 
-        db.query(equiposQuery, queryParams, (err, equiposResult) => { 
+        db.query(equiposQuery, queryParams, (err, equiposResult) => {
             if (err) {
                 console.error(err);
                 return res.status(500).json({ error: 'Error al obtener equipos' });
@@ -102,28 +102,58 @@ router.put('/:id', verifyToken, (req, res) => {
         res.status(201).json({
             message: 'Equipo actualizado correctamente'
         });
-        
+
     })
 });
 
-//Método DELETE
+// Método DELETE mejorado con lógica de limpieza
 router.delete('/:id', verifyToken, (req, res) => {
-    //Obtener los datos
-    const { id } = req.params; //Capturar el id desde los parámetros de la URL
-    const query = 'DELETE FROM equipo WHERE equ_id = ?';
-    const values = [id];
-    db.query(query, values, (err, result) => {
-        if (err) {
-            console.log(err);
-            return res.status(500).json({ error: 'Error al eliminar el equipo' });
-        }
-        if (result.affectedRows === 0) {
-            return res.status(404).json({ message: "Equipo no encontrado" })
-        }
-        res.status(201).json({
-            message: 'Equipo eliminado correctamente'
+    const { id } = req.params;
+
+    // 1. Iniciamos una transacción para asegurar la integridad
+    db.beginTransaction((err) => {
+        if (err) return res.status(500).json({ error: "Error al iniciar transacción" });
+
+        // PASO 1: Borrar estadísticas de los jugadores que pertenecen a ese equipo
+        const deleteStats = `DELETE FROM estadistica_jugador WHERE jug_id IN (SELECT jug_id FROM jugador WHERE equ_id = ?)`;
+
+        db.query(deleteStats, [id], (err) => {
+            if (err) return db.rollback(() => res.status(500).json({ error: "Error eliminando estadísticas" }));
+
+            // PASO 2: Borrar jugadores y entrenadores (puedes usar varias queries o una que maneje las dependencias)
+            const deletePlayers = `DELETE FROM jugador WHERE equ_id = ?`;
+            db.query(deletePlayers, [id], (err) => {
+                if (err) return db.rollback(() => res.status(500).json({ error: "Error eliminando jugadores" }));
+
+                const deleteCoach = `DELETE FROM entrenador WHERE equ_id = ?`;
+                db.query(deleteCoach, [id], (err) => {
+                    if (err) return db.rollback(() => res.status(500).json({ error: "Error eliminando entrenador" }));
+
+                    // PASO 3: Borrar partidos donde participó el equipo (local o visitante)
+                    const deleteMatches = `DELETE FROM partido WHERE equ_local_id = ? OR equ_visitante_id = ?`;
+                    db.query(deleteMatches, [id, id], (err) => {
+                        if (err) return db.rollback(() => res.status(500).json({ error: "Error eliminando partidos" }));
+
+                        // PASO 4: Finalmente, borrar el equipo
+                        const deleteTeam = `DELETE FROM equipo WHERE equ_id = ?`;
+                        db.query(deleteTeam, [id], (err, result) => {
+                            if (err) return db.rollback(() => res.status(500).json({ error: "Error final al eliminar equipo" }));
+
+                            // Si todo salió bien, confirmamos los cambios
+                            db.commit((err) => {
+                                if (err) return db.rollback(() => res.status(500).json({ error: "Error al confirmar cambios" }));
+
+                                if (result.affectedRows === 0) {
+                                    return res.status(404).json({ message: 'Equipo no encontrado' });
+                                }
+                                res.status(200).json({ message: 'Equipo y todas sus relaciones eliminadas correctamente' });
+                            });
+                        });
+                    });
+                });
+            });
         });
-    })
+    });
 });
 
 module.exports = router;
